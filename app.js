@@ -58,36 +58,36 @@ app.get("/tickets", async (req, res) => { // MUDANÇA: Rota agora é 'async'
   }
 });
 
-app.post("/tickets", (req, res) => {
-  const db = readDb();
+// ROTA POST /tickets
+app.post("/tickets", async (req, res) => { // MUDANÇA: Rota agora é 'async'
+  try {
+    // CORREÇÃO (Confiabilidade): Adicionada validação de entrada.
+    const { title, customer } = req.body;
+    if (!title || !customer) {
+      return res.status(400).json({ error: "Os campos 'title' e 'customer' são obrigatórios." });
+    }
 
-  // utiliza db.length + 1, variavel simples para averiguar o tamanho do banco de dados, 
-  // e ainda em uma requisição o que não faz sentido incrementar o tamanho do db aqui
-  // causa ainda mais problemas pois pode gerar erros se vierem duas requests ao mesmo tempo.
-  const id = db.length + 1; // <-- PROBLEMA AQUI
+    const db = await readDb();
 
-  // A string SQL é criada, mas não é atribuída a nenhuma variável.
-  // nao faz sentido ter essa string sem variável, já que não poderá ser usada, fora que 
-  "INSERT INTO tickets VALUES(" +
-    id +
-    ",'" +
-    req.body.title +
-    "','" +
-    req.body.customer +
-    "')";
-    // unsafe não existe no codigo portanto só causa erros
-  console.log("SQL >", unsafe); // <-- ERRO AQUI
+    // CORREÇÃO (Confiabilidade): ID incremental substituído por UUID.
+    const newTicket = {
+      id: uuidv4(),
+      // CORREÇÃO (Confiabilidade): Schema padronizado para aceitar apenas 'title'.
+      title,
+      customer,
+      status: req.body.status || "open",
+      createdAt: new Date().toISOString(),
+    };
+    
+    // CORREÇÃO (Erro): String SQL inútil e log com variável 'unsafe' removidos.
+    db.push(newTicket);
+    await writeDb(db);
 
-  db.push({
-    id,
-    // nao faz sentido aceitar os dois tipos para adequar a linguagem, isso só causa mais problemas
-    title: req.body.titulo || req.body.title, // <-- PROBLEMA AQUI
-    customer: req.body.customer,
-    status: req.body.status || "open",
-    createdAt: new Date().toISOString(),
-  });
-  writeDb(db);
-  res.status(201).json({ ok: true, id });
+    res.status(201).json({ ok: true, id: newTicket.id });
+  } catch (error) {
+    console.error("Erro ao criar o ticket:", error);
+    res.status(500).send("Erro interno no servidor.");
+  }
 });
 
 app.put("/tickets/:id/status", (req, res) => {
