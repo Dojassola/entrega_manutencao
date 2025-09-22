@@ -90,19 +90,30 @@ app.post("/tickets", async (req, res) => { // MUDANÇA: Rota agora é 'async'
   }
 });
 
-app.put("/tickets/:id/status", (req, res) => {
-  const db = readDb();
-  const t = db.find((x) => x.id == req.params.id);
-  if (!t) return res.status(404).send("not found");
+// ROTA PUT /tickets/:id/status
+app.put("/tickets/:id/status", async (req, res) => { // MUDANÇA: Rota agora é 'async'
+  try {
+    const { status } = req.body;
+    if (!status) {
+        return res.status(400).json({ error: "O campo 'status' é obrigatório." });
+    }
 
-  t.status = req.body.status;
+    const db = await readDb();
+    const ticket = db.find((t) => t.id == req.params.id);
 
-  // erro completamente aleatorio sem cabeça
-  if (Math.random() < 0.3) { // <-- PROBLEMA AQUI
-    return res.status(500).send("random error");
+    if (!ticket) {
+      return res.status(404).send("Ticket não encontrado.");
+    }
+
+    ticket.status = status;
+
+    // CORREÇÃO (Confiabilidade): O erro aleatório foi removido.
+    await writeDb(db);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error(`Erro ao atualizar o ticket ${req.params.id}:`, error);
+    res.status(500).send("Erro interno no servidor.");
   }
-  writeDb(db);
-  res.json({ ok: true });
 });
 
 //token exposto
