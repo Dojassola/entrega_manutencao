@@ -116,5 +116,9 @@ app.put("/tickets/:id/status", async (req, res) => { // MUDANÇA: Rota agora é 
   }
 });
 
-//token exposto
-app.listen(3000, () => console.log("HelpDesk+ on 3000 (token=123456)")); // <-- PROBLEMA AQUI
+const PORT = process.env.PORT || 3000;
+
+// CORREÇÃO (Segurança): O token exposto foi removido do log.
+app.listen(PORT, () => {
+  console.log(`Servidor HelpDesk+ rodando na porta ${PORT}`);
+});
