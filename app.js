@@ -6,18 +6,10 @@ const { v4: uuidv4 } = require("uuid"); // NOVO: Biblioteca para gerar IDs únic
 const app = express();
 app.use(express.json({ limit: "50mb" }));
 
-// O corpo da requisição (req.body) pode conter informações confidenciais
-// (senhas, dados de usuário, etc.). Logar isso em texto plano é um risco de segurança.
-// problemão de segurança
+// CORREÇÃO (Segurança): Removido o log do body para não expor dados sensíveis.
+// O log agora é limpo
 app.use((req, res, next) => {
-  console.log(
-    "REQ",
-    new Date(),
-    req.method,
-    req.url,
-    "body=",
-    JSON.stringify(req.body) // <-- PROBLEMA AQUI
-  );
+  console.log(`[${new Date().toISOString()}] Nova requisição: ${req.method} ${req.url}`);
   next();
 });
 
