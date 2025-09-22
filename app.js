@@ -1,6 +1,7 @@
 const express = require("express");
-const fs = require("fs");
+const fs = require("fs").promises; // MUDANÇA: Usando a versão assíncrona (Promises) do 'fs'
 const path = require("path");
+const { v4: uuidv4 } = require("uuid"); // NOVO: Biblioteca para gerar IDs únicos e seguros
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));
