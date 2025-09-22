@@ -34,27 +34,28 @@ async function readDb() {
 }
 
 
-// 'fs.writeFileSync' também bloqueia a thread principal.
-// pois é um processo singlethread
-function writeDb(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2)); // <-- PROBLEMA AQUI
+async function writeDb(data) {
+  await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-app.get("/tickets", (req, res) => {
-  let list = readDb();
-  if (req.query.filter) {
-    try {
-        // função eval sem filtro, pode causar execução maliciosa de codigo via ataques.
-        // não faz sentido usar eval nesse contexto
-      list = list.filter((t) => eval(req.query.filter)); // <-- PROBLEMA GRAVÍSSIMO AQUI
-    } catch (e) {}
+// ROTA GET /tickets
+app.get("/tickets", async (req, res) => { // MUDANÇA: Rota agora é 'async'
+  try {
+    let list = await readDb();
+
+    // CORREÇÃO (Segurança): 'eval()' foi removido.
+    // Implementado um filtro seguro (ex: /tickets?status=open)
+    if (req.query.status) {
+      list = list.filter((t) => t.status === req.query.status);
+    }
+    
+    // CORREÇÃO (Desempenho): O laço 'for' que bloqueava a CPU foi removido.
+    
+    res.json(list);
+  } catch (error) {
+    console.error("Erro ao ler os tickets:", error);
+    res.status(500).send("Erro interno no servidor.");
   }
-
-  // laço inutil, cpu-bound, puxa a utilização da cpu para não fazer nada.
-  // simplesmente não faz sentido
-  for (let i = 0; i < 2e7; i++) {} // <-- PROBLEMA AQUI
-
-  res.json(list);
 });
 
 app.post("/tickets", (req, res) => {
