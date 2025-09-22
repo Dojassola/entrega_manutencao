@@ -15,18 +15,24 @@ app.use((req, res, next) => {
 
 const DB_FILE = path.join(__dirname, "tickets.json");
 
-// MÁ PRÁTICA 2: Vazamento de memória (Memory Leak).
-// O array 'cache' cresce indefinidamente, adicionando um objeto a cada segundo.
-// A memória nunca é liberada, o que eventualmente esgotará os recursos do servidor e
-// travará a aplicação.
-let cache = [];
-setInterval(() => cache.push({ ts: Date.now() }), 1000); // <-- PROBLEMA AQUI
+// CORREÇÃO (Vazamento de Memória): O array 'cache' e o 'setInterval' foram removidos.
+// let cache = [];
+// setInterval(...);
 
-// 'fs.readFileSync' bloqueia a thread principal do Node.js quando lê o arquivo.
-function readDb() {
-  const txt = fs.readFileSync(DB_FILE, "utf8") || "[]"; // <-- PROBLEMA AQUI
-  return JSON.parse(txt);
+// CORREÇÃO (Desempenho): Funções agora são 'async' e usam 'await' para não bloquear a thread.
+async function readDb() {
+  try {
+    const txt = await fs.readFile(DB_FILE, "utf8");
+    return JSON.parse(txt);
+  } catch (error) {
+    // Se o arquivo não existir (ENOENT), trata como um banco de dados vazio.
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
 }
+
 
 // 'fs.writeFileSync' também bloqueia a thread principal.
 // pois é um processo singlethread
